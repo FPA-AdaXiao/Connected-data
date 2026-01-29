@@ -6,11 +6,11 @@ import plotly.express as px
 # Page configuration
 # =================================================
 st.set_page_config(
-    page_title="FTT Market Dashboard",
+    page_title="HBS Market Dashboard",
     layout="wide"
 )
 
-st.title("📊 FTT Cycle Market Dashboard")
+st.title("📊 HBS Cycle Market Dashboard")
 
 # =================================================
 # Load data
@@ -151,4 +151,5 @@ with tab3:
     st.dataframe(filtered_df, use_container_width=True, height=500)
 
 st.caption("Deployed with Streamlit • Plotly • Python")
+
 
