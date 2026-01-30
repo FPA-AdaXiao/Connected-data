@@ -6,11 +6,11 @@ import plotly.express as px
 # Page configuration
 # =================================================
 st.set_page_config(
-    page_title="HBS AA Market Dashboard",
+    page_title="HBS100/101 AA Market Dashboard",
     layout="wide"
 )
 
-st.title("📊 HBS Connected Washers Cycle AA Market Dashboard")
+st.title("📊 HBS100/101 Connected Washers Cycle AA Market Dashboard")
 
 # =================================================
 # Load data
@@ -18,7 +18,7 @@ st.title("📊 HBS Connected Washers Cycle AA Market Dashboard")
 @st.cache_data
 def load_data():
     df = pd.read_excel(
-        "FTT Cycle Data 202511_HBSanonymization.xlsx",
+        "FTT Cycle Data 202511_HBS_anonymization.xlsx",
         sheet_name="anonymized_data"
     )
 
@@ -151,6 +151,7 @@ with tab3:
     st.dataframe(filtered_df, use_container_width=True, height=500)
 
 st.caption("Deployed with Streamlit • Plotly • Python")
+
 
 
 
