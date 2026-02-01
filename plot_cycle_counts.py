@@ -22,16 +22,7 @@ def load_data():
         sheet_name="anonymized_data"
     )
 
-    # Clean junk columns
-    df = df.loc[:, ~df.columns.str.contains("^Unnamed|^Column", case=False)]
-
-    # Time handling
-    if "timestamp NZ" in df.columns:
-        df["timestamp_nz"] = pd.to_datetime(df["timestamp NZ"], errors="coerce")
-    else:
-        df["timestamp_nz"] = pd.to_datetime(df["timestamp"], errors="coerce")
-
-    df["calendar_day"] = df["timestamp_nz"].dt.date
+    df["timestamp"] = pd.to_datetime( df["timestamp"], errors="coerce" )
 
     return df.dropna(subset=["timestamp_nz"])
 
@@ -154,44 +145,12 @@ with tab2:
 # Data Table
 # -------------------------------------------------
 with tab3:
-    if filtered_df.empty:
-        st.warning("No data for selected filters.")
-    else:
-        for machine, mdf in filtered_df.groupby("hb_jiduser"):
-            total_usage = len(mdf)
-
-            st.subheader(f"🖥 Machine: {machine}")
-            st.caption(f"Total usage (machine): **{total_usage}**")
-
-            day_summary = (
-                mdf
-                .groupby("calendar_day")
-                .size()
-                .reset_index(name="usage_per_day")
-                .sort_values("calendar_day")
-            )
-
-            for _, row in day_summary.iterrows():
-                day = row["calendar_day"]
-                usage_day = row["usage_per_day"]
-
-                with st.expander(f"📅 {day} — Usage: {usage_day}"):
-                    day_df = (
-                        mdf[mdf["calendar_day"] == day]
-                        .sort_values("timestamp_nz")
-                        .loc[:, ["timestamp_nz"]]
-                    )
-
-                    st.dataframe(
-                        day_df,
-                        use_container_width=True,
-                        height=250
-                    )
-
-            st.divider()
+    detail_df = ( filtered_df .sort_values(["hb_jiduser", "timestamp NZ"]) ) 
+    st.dataframe( detail_df, use_container_width=True, height=500 )
 
 
 st.caption("Deployed with Streamlit • Plotly • Python")
+
 
 
 
