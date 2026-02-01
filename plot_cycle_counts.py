@@ -82,7 +82,7 @@ st.divider()
 # Tabs
 # =================================================
 tab1, tab2, tab3 = st.tabs(
-    ["📈 Time Series", "🖥 Machine Analysis", "📊 Data Table"]
+    ["📈 Time Series", "🖥 Machine Analysis", "📊 Machine Details"]
 )
 
 # -------------------------------------------------
@@ -148,9 +148,19 @@ with tab2:
 # Data Table
 # -------------------------------------------------
 with tab3:
-    st.dataframe(filtered_df, use_container_width=True, height=500)
+    detail_df = (
+        filtered_df
+        .sort_values(["hb_jiduser", "timestamp_nz"])
+    )
+
+    st.dataframe(
+        detail_df,
+        use_container_width=True,
+        height=500
+    )
 
 st.caption("Deployed with Streamlit • Plotly • Python")
+
 
 
 
