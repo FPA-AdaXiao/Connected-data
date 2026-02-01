@@ -22,14 +22,19 @@ def load_data():
         sheet_name="anonymized_data"
     )
 
-    df["timestamp"] = pd.to_datetime( df["timestamp"], errors="coerce" )
+    # clean junk columns
+    df = df.loc[:, ~df.columns.str.contains("^Unnamed|^Column", case=False)]
+
+    # create NZ timestamp
+    df["timestamp_nz"] = pd.to_datetime(df["timestamp"], errors="coerce")
+    df["calendar_day"] = df["timestamp_nz"].dt.date
 
     return df.dropna(subset=["timestamp_nz"])
 
 df = load_data()
 
 # =================================================
-# Sidebar filters (Power BI slicers)
+# Sidebar filters
 # =================================================
 st.sidebar.header("Filters")
 
@@ -41,8 +46,8 @@ selected_machines = st.sidebar.multiselect(
     default=machine_list
 )
 
-date_min = df["timestamp"].min().date()
-date_max = df["timestamp"].max().date()
+date_min = df["timestamp_nz"].min().date()
+date_max = df["timestamp_nz"].max().date()
 
 date_range = st.sidebar.date_input(
     "Date range",
@@ -54,7 +59,7 @@ end_date = pd.to_datetime(date_range[1]) + pd.Timedelta(days=1)
 
 filtered_df = df[
     (df["hb_jiduser"].isin(selected_machines)) &
-    (df["timestamp"].between(start_date, end_date))
+    (df["timestamp_nz"].between(start_date, end_date))
 ]
 
 # =================================================
@@ -68,7 +73,7 @@ k2.metric("Unique Machines", filtered_df["hb_jiduser"].nunique())
 if len(filtered_df):
     k3.metric(
         "Date Span (days)",
-        (filtered_df["timestamp"].max() - filtered_df["timestamp"].min()).days
+        (filtered_df["timestamp_nz"].max() - filtered_df["timestamp_nz"].min()).days
     )
 else:
     k3.metric("Date Span (days)", 0)
@@ -79,19 +84,19 @@ st.divider()
 # Tabs
 # =================================================
 tab1, tab2, tab3 = st.tabs(
-    ["📈 Time Series", "🖥 Machine Analysis", "📊 Machine Details"]
+    ["📈 Time Series", "🖥 Machine Analysis", "🧩 Machine Pivot"]
 )
 
 # -------------------------------------------------
 # Time Series
 # -------------------------------------------------
 with tab1:
-    if len(filtered_df) == 0:
+    if filtered_df.empty:
         st.warning("No data for selected filters.")
     else:
         ts_df = (
             filtered_df
-            .set_index("timestamp")
+            .set_index("timestamp_nz")
             .resample("D")
             .size()
             .reset_index(name="records")
@@ -99,7 +104,7 @@ with tab1:
 
         fig = px.line(
             ts_df,
-            x="timestamp",
+            x="timestamp_nz",
             y="records",
             markers=True
         )
@@ -116,7 +121,7 @@ with tab1:
 # Machine Analysis
 # -------------------------------------------------
 with tab2:
-    if len(filtered_df) == 0:
+    if filtered_df.empty:
         st.warning("No data for selected filters.")
     else:
         machine_df = (
@@ -142,20 +147,43 @@ with tab2:
         st.plotly_chart(fig, use_container_width=True)
 
 # -------------------------------------------------
-# Data Table
+# Machine Pivot (Excel-style format)
 # -------------------------------------------------
 with tab3:
-    detail_df = ( filtered_df .sort_values(["hb_jiduser", "timestamp NZ"]) ) 
-    st.dataframe( detail_df, use_container_width=True, height=500 )
+    if filtered_df.empty:
+        st.warning("No data for selected filters.")
+    else:
+        for machine, mdf in filtered_df.groupby("hb_jiduser"):
+            total_usage = len(mdf)
 
+            st.subheader(f"🖥 Machine: {machine}")
+            st.caption(f"Total usage (machine): **{total_usage}**")
 
-st.caption("Deployed with Streamlit • Plotly • Python")
+            day_summary = (
+                mdf
+                .groupby("calendar_day")
+                .size()
+                .reset_index(name="usage_per_day")
+                .sort_values("calendar_day")
+            )
 
+            for _, row in day_summary.iterrows():
+                day = row["calendar_day"]
+                usage = row["usage_per_day"]
 
+                with st.expander(f"{day} — usage: {usage}"):
+                    day_df = (
+                        mdf[mdf["calendar_day"] == day]
+                        .sort_values("timestamp_nz")
+                        [["timestamp_nz"]]
+                    )
 
+                    st.dataframe(
+                        day_df,
+                        use_container_width=True,
+                        height=220
+                    )
 
+            st.divider()
 
-
-
-
-
+st.caption("Streamlit • Plotly • PowerBI-style Machine Pivot")
