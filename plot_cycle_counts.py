@@ -150,7 +150,7 @@ with tab2:
 with tab3:
     detail_df = (
         filtered_df
-        .sort_values(["hb_jiduser", "timestamp_nz"])
+        .sort_values(["hb_jiduser", "timestamp NZ"])
     )
 
     st.dataframe(
@@ -160,6 +160,7 @@ with tab3:
     )
 
 st.caption("Deployed with Streamlit • Plotly • Python")
+
 
 
 
