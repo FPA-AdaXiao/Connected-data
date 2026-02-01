@@ -22,12 +22,18 @@ def load_data():
         sheet_name="anonymized_data"
     )
 
-    df["timestamp"] = pd.to_datetime(
-        df["timestamp"],
-        errors="coerce"
-    )
+    # Clean junk columns
+    df = df.loc[:, ~df.columns.str.contains("^Unnamed|^Column", case=False)]
 
-    return df.dropna(subset=["timestamp"])
+    # Time handling
+    if "timestamp NZ" in df.columns:
+        df["timestamp_nz"] = pd.to_datetime(df["timestamp NZ"], errors="coerce")
+    else:
+        df["timestamp_nz"] = pd.to_datetime(df["timestamp"], errors="coerce")
+
+    df["calendar_day"] = df["timestamp_nz"].dt.date
+
+    return df.dropna(subset=["timestamp_nz"])
 
 df = load_data()
 
@@ -172,8 +178,8 @@ with tab3:
                 with st.expander(f"📅 {day} — Usage: {usage_day}"):
                     day_df = (
                         mdf[mdf["calendar_day"] == day]
-                        .sort_values("timestamp NZ")
-                        .loc[:, ["timestamp NZ"]]
+                        .sort_values("timestamp_nz")
+                        .loc[:, ["timestamp_nz"]]
                     )
 
                     st.dataframe(
@@ -186,6 +192,7 @@ with tab3:
 
 
 st.caption("Deployed with Streamlit • Plotly • Python")
+
 
 
 
