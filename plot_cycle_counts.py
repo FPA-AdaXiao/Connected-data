@@ -148,18 +148,45 @@ with tab2:
 # Data Table
 # -------------------------------------------------
 with tab3:
-    detail_df = (
-        filtered_df
-        .sort_values(["hb_jiduser", "timestamp NZ"])
-    )
+    if filtered_df.empty:
+        st.warning("No data for selected filters.")
+    else:
+        for machine, mdf in filtered_df.groupby("hb_jiduser"):
+            total_usage = len(mdf)
 
-    st.dataframe(
-        detail_df,
-        use_container_width=True,
-        height=500
-    )
+            st.subheader(f"🖥 Machine: {machine}")
+            st.caption(f"Total usage (machine): **{total_usage}**")
+
+            day_summary = (
+                mdf
+                .groupby("calendar_day")
+                .size()
+                .reset_index(name="usage_per_day")
+                .sort_values("calendar_day")
+            )
+
+            for _, row in day_summary.iterrows():
+                day = row["calendar_day"]
+                usage_day = row["usage_per_day"]
+
+                with st.expander(f"📅 {day} — Usage: {usage_day}"):
+                    day_df = (
+                        mdf[mdf["calendar_day"] == day]
+                        .sort_values("timestamp NZ")
+                        .loc[:, ["timestamp NZ"]]
+                    )
+
+                    st.dataframe(
+                        day_df,
+                        use_container_width=True,
+                        height=250
+                    )
+
+            st.divider()
+
 
 st.caption("Deployed with Streamlit • Plotly • Python")
+
 
 
 
